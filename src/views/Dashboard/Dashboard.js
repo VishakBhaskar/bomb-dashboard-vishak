@@ -16,23 +16,18 @@ import useTotalValueLocked from '../../hooks/useTotalValueLocked';
 import useCurrentEpoch from '../../hooks/useCurrentEpoch';
 import useLastEpochTwap from '../../hooks/useLastEpochTwap';
 import useTreasuryAllocationTimes from '../../hooks/useTreasuryAllocationTimes';
-// import { Bomb as bombTesting } from '../../bomb-finance/deployments/deployments.testing.json';
-//import { Bomb as bombProd } from '../../bomb-finance/deployments/deployments.mainnet.json';
+import useTotalStakedOnBoardroom from '../../hooks/useTotalStakedOnBoardroom';
+import { getDisplayBalance } from '../../utils/formatBalance';
+import useFetchBoardroomAPR from '../../hooks/useFetchBoardroomAPR';
+
 import { roundAndFormatNumber } from '../../0x';
-import MetamaskFox from '../../assets/img/metamask-fox.svg';
-import { Box, Button, Card, CardContent, Grid, Paper, Typography } from '@material-ui/core';
+
+import { Box, Button, Card, CardContent, Grid, Typography } from '@material-ui/core';
 import ZapModal from '../Bank/components/ZapModal';
-import { Alert } from '@material-ui/lab';
-import { IoCloseOutline } from 'react-icons/io5';
-import { BiLoaderAlt } from 'react-icons/bi';
 import { makeStyles } from '@material-ui/core/styles';
 import useBombFinance from '../../hooks/useBombFinance';
-//import { ReactComponent as IconTelegram } from '../../assets/img/telegram.svg';
 import { Helmet } from 'react-helmet';
 import ProgressCountdown from '../Boardroom/components/ProgressCountdown';
-import BombImage from '../../assets/img/bomb.png';
-
-//import useBombMaxiStats from '../../hooks/useBombMaxiStats';
 
 import HomeImage from '../../assets/img/background.jpg';
 const BackgroundImage = createGlobalStyle`
@@ -71,21 +66,24 @@ const Home = () => {
   const { to } = useTreasuryAllocationTimes();
   const current_Epoch = useCurrentEpoch();
   const lastEpochTwap = useLastEpochTwap();
+  const bSharestaked = useTotalStakedOnBoardroom();
+  const boardroom_APR = useFetchBoardroomAPR();
 
   // const bombmaxi = useBombMaxiStats('0xd6f52e8ab206e59a1e13b3d6c5b7f31e90ef46ef000200000000000000000028');
 
   const bombLPStats = useMemo(() => (bombFtmLpStats ? bombFtmLpStats : null), [bombFtmLpStats]);
-  const bshareLPStats = useMemo(() => (bShareFtmLpStats ? bShareFtmLpStats : null), [bShareFtmLpStats]);
+  const boardroomAPR = useMemo(() => (boardroom_APR ? (boardroom_APR / 365).toFixed(2) : null), [boardroom_APR]);
   const bombPriceInDollars = useMemo(
     () => (bombStats ? Number(bombStats.priceInDollars).toFixed(2) : null),
     [bombStats],
   );
+  const bshareLPStats = useMemo(() => (bShareFtmLpStats ? bShareFtmLpStats : null), [bShareFtmLpStats]);
   const currentEpoch = useMemo(() => (current_Epoch ? Number(current_Epoch) : null), [current_Epoch]);
   const lastTwap = useMemo(
-    () => (lastEpochTwap ? Number(lastEpochTwap / (currentEpoch * 10000000000)).toFixed(3) : null),
-    [lastEpochTwap],
+    () => (lastEpochTwap && current_Epoch ? Number(lastEpochTwap / (current_Epoch * 10000000000)).toFixed(3) : null),
+    [lastEpochTwap, current_Epoch],
   );
-  const bombPriceInBNB = useMemo(() => (bombStats ? Number(bombStats.tokenInFtm).toFixed(4) : null), [bombStats]);
+
   const bombCirculatingSupply = useMemo(() => (bombStats ? String(bombStats.circulatingSupply) : null), [bombStats]);
   const bombTotalSupply = useMemo(() => (bombStats ? String(bombStats.totalSupply) : null), [bombStats]);
 
@@ -93,10 +91,14 @@ const Home = () => {
     () => (bShareStats ? Number(bShareStats.priceInDollars).toFixed(2) : null),
     [bShareStats],
   );
-  const bSharePriceInBNB = useMemo(
-    () => (bShareStats ? Number(bShareStats.tokenInFtm).toFixed(4) : null),
-    [bShareStats],
+  const boardRoomTVL = useMemo(
+    () =>
+      bSharestaked && bShareStats
+        ? roundAndFormatNumber(Number(bSharestaked), 2) * roundAndFormatNumber(Number(bShareStats.priceInDollars), 2)
+        : null,
+    [bShareStats, bSharestaked],
   );
+
   const bShareCirculatingSupply = useMemo(
     () => (bShareStats ? String(bShareStats.circulatingSupply) : null),
     [bShareStats],
@@ -107,7 +109,7 @@ const Home = () => {
     () => (tBondStats ? Number(tBondStats.priceInDollars).toFixed(2) : null),
     [tBondStats],
   );
-  const tBondPriceInBNB = useMemo(() => (tBondStats ? Number(tBondStats.tokenInFtm).toFixed(4) : null), [tBondStats]);
+
   const tBondCirculatingSupply = useMemo(
     () => (tBondStats ? String(tBondStats.circulatingSupply) : null),
     [tBondStats],
@@ -140,17 +142,6 @@ const Home = () => {
       tokenName={'BSHARE-BNB-LP'}
     />,
   );
-
-  const [modal, setModal] = useState(false);
-  const [videoLoading, setVideoLoading] = useState(true);
-
-  const openModal = () => {
-    setModal(!modal);
-  };
-
-  const spinner = () => {
-    setVideoLoading(!videoLoading);
-  };
 
   return (
     <Page>
@@ -262,66 +253,81 @@ const Home = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardContent align="center">
-              <Box mt={2}>
-                <CardIcon>
-                  <TokenSymbol symbol="BOMB-BTCB-LP" />
-                </CardIcon>
-              </Box>
-              <h2>BOMB-BTCB PancakeSwap LP</h2>
-              <Box mt={2}>
-                <Button disabled onClick={onPresentBombZap} className="shinyButtonDisabledSecondary">
-                  Zap In
-                </Button>
-              </Box>
-              <Box mt={2}>
-                <span style={{ fontSize: '26px' }}>
-                  {bombLPStats?.tokenAmount ? bombLPStats?.tokenAmount : '-.--'} BOMB /{' '}
-                  {bombLPStats?.ftmAmount ? bombLPStats?.ftmAmount : '-.--'} BTCB
-                </span>
-              </Box>
-              <Box>${bombLPStats?.priceOfOne ? bombLPStats.priceOfOne : '-.--'}</Box>
-              <span style={{ fontSize: '12px' }}>
-                Liquidity: ${bombLPStats?.totalLiquidity ? roundAndFormatNumber(bombLPStats.totalLiquidity, 2) : '-.--'}{' '}
-                <br />
-                Total Supply: {bombLPStats?.totalSupply ? roundAndFormatNumber(bombLPStats.totalSupply, 2) : '-.--'}
+
+        {/* Board Room  */}
+        <Card>
+          <CardContent align="center">
+            <h2>Board Room</h2>
+            <Box mt={2}>
+              <Typography>TVL : $ {boardRoomTVL}</Typography>
+              <Typography>Total Staked: {getDisplayBalance(bSharestaked)}</Typography>
+              <Typography>Daily returns : {boardroomAPR}%</Typography>
+              <Button disabled onClick={onPresentBombZap} className="shinyButtonDisabledSecondary">
+                Zap In
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent align="center">
+            <Box mt={2}>
+              <CardIcon>
+                <TokenSymbol symbol="BOMB-BTCB-LP" />
+              </CardIcon>
+            </Box>
+            <h2>BOMB-BTCB PancakeSwap LP</h2>
+            <Box mt={2}>
+              <Button disabled onClick={onPresentBombZap} className="shinyButtonDisabledSecondary">
+                Zap In
+              </Button>
+            </Box>
+            <Box mt={2}>
+              <span style={{ fontSize: '26px' }}>
+                {bombLPStats?.tokenAmount ? bombLPStats?.tokenAmount : '-.--'} BOMB /{' '}
+                {bombLPStats?.ftmAmount ? bombLPStats?.ftmAmount : '-.--'} BTCB
               </span>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Card>
-            <CardContent align="center">
-              <Box mt={2}>
-                <CardIcon>
-                  <TokenSymbol symbol="BSHARE-BNB-LP" />
-                </CardIcon>
-              </Box>
-              <h2>BSHARE-BNB PancakeSwap LP</h2>
-              <Box mt={2}>
-                <Button onClick={onPresentBshareZap} className="shinyButtonSecondary">
-                  Zap In
-                </Button>
-              </Box>
-              <Box mt={2}>
-                <span style={{ fontSize: '26px' }}>
-                  {bshareLPStats?.tokenAmount ? bshareLPStats?.tokenAmount : '-.--'} BSHARE /{' '}
-                  {bshareLPStats?.ftmAmount ? bshareLPStats?.ftmAmount : '-.--'} BNB
-                </span>
-              </Box>
-              <Box>${bshareLPStats?.priceOfOne ? bshareLPStats.priceOfOne : '-.--'}</Box>
-              <span style={{ fontSize: '12px' }}>
-                Liquidity: $
-                {bshareLPStats?.totalLiquidity ? roundAndFormatNumber(bshareLPStats.totalLiquidity, 2) : '-.--'}
-                <br />
-                Total Supply: {bshareLPStats?.totalSupply ? roundAndFormatNumber(bshareLPStats.totalSupply, 2) : '-.--'}
-              </span>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Box>
+            <Box>${bombLPStats?.priceOfOne ? bombLPStats.priceOfOne : '-.--'}</Box>
+            <span style={{ fontSize: '12px' }}>
+              Liquidity: ${bombLPStats?.totalLiquidity ? roundAndFormatNumber(bombLPStats.totalLiquidity, 2) : '-.--'}{' '}
+              <br />
+              Total Supply: {bombLPStats?.totalSupply ? roundAndFormatNumber(bombLPStats.totalSupply, 2) : '-.--'}
+            </span>
+          </CardContent>
+        </Card>
       </Grid>
+      <Grid item xs={12} sm={6}>
+        <Card>
+          <CardContent align="center">
+            <Box mt={2}>
+              <CardIcon>
+                <TokenSymbol symbol="BSHARE-BNB-LP" />
+              </CardIcon>
+            </Box>
+            <h2>BSHARE-BNB PancakeSwap LP</h2>
+            <Box mt={2}>
+              <Button onClick={onPresentBshareZap} className="shinyButtonSecondary">
+                Zap In
+              </Button>
+            </Box>
+            <Box mt={2}>
+              <span style={{ fontSize: '26px' }}>
+                {bshareLPStats?.tokenAmount ? bshareLPStats?.tokenAmount : '-.--'} BSHARE /{' '}
+                {bshareLPStats?.ftmAmount ? bshareLPStats?.ftmAmount : '-.--'} BNB
+              </span>
+            </Box>
+            <Box>${bshareLPStats?.priceOfOne ? bshareLPStats.priceOfOne : '-.--'}</Box>
+            <span style={{ fontSize: '12px' }}>
+              Liquidity: $
+              {bshareLPStats?.totalLiquidity ? roundAndFormatNumber(bshareLPStats.totalLiquidity, 2) : '-.--'}
+              <br />
+              Total Supply: {bshareLPStats?.totalSupply ? roundAndFormatNumber(bshareLPStats.totalSupply, 2) : '-.--'}
+            </span>
+          </CardContent>
+        </Card>
+      </Grid>
+      {/* </Grid> */}
     </Page>
   );
 };
