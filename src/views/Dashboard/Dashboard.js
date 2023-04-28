@@ -44,9 +44,11 @@ import useBombFinance from '../../hooks/useBombFinance';
 import { Helmet } from 'react-helmet';
 import ProgressCountdown from '../Boardroom/components/ProgressCountdown';
 import Stake from '../Boardroom/components/Stake';
+import Boardroom from './components/Boardroom';
 
 import HomeImage from '../../assets/img/background.jpg';
 import Harvest from '../Boardroom/components/Harvest';
+// import Boardroom from '../Boardroom';
 const BackgroundImage = createGlobalStyle`
   body {
     background: url(${HomeImage}) repeat !important;
@@ -95,6 +97,7 @@ const Home = () => {
     () => (bombStats ? Number(bombStats.priceInDollars).toFixed(2) : null),
     [bombStats],
   );
+
   const bshareLPStats = useMemo(() => (bShareFtmLpStats ? bShareFtmLpStats : null), [bShareFtmLpStats]);
   const currentEpoch = useMemo(() => (current_Epoch ? Number(current_Epoch) : null), [current_Epoch]);
   const lastTwap = useMemo(
@@ -294,18 +297,27 @@ const Home = () => {
         </Grid>
       </Grid>
       {/* Board Room  */}
-      <Card>
+      <CardContent align="center">
+        <Boardroom />
+      </CardContent>
+      {/* <Card>
         <CardContent align="center">
           <h2>Board Room</h2>
           <Box mt={2}>
             <Typography>TVL : $ {boardRoomTVL}</Typography>
             <Typography>Total Staked: {getDisplayBalance(bSharestaked)}</Typography>
             <Typography>Daily returns : {boardroomAPR}%</Typography>
-            <Harvest />
-            <Stake />
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={3}>
+                <Harvest />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <Boardroom />
+              </Grid>
+            </Grid>
           </Box>
         </CardContent>
-      </Card>
+      </Card> */}
       <Grid container spacing={3}></Grid>
 
       {/* </Grid> */}
