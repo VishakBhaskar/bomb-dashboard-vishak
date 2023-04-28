@@ -19,17 +19,34 @@ import useTreasuryAllocationTimes from '../../hooks/useTreasuryAllocationTimes';
 import useTotalStakedOnBoardroom from '../../hooks/useTotalStakedOnBoardroom';
 import { getDisplayBalance } from '../../utils/formatBalance';
 import useFetchBoardroomAPR from '../../hooks/useFetchBoardroomAPR';
+import useCashPriceInEstimatedTWAP from '../../hooks/useCashPriceInEstimatedTWAP';
 
 import { roundAndFormatNumber } from '../../0x';
 
-import { Box, Button, Card, CardContent, Grid, Typography } from '@material-ui/core';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  TableHead,
+  Paper,
+} from '@material-ui/core';
 import ZapModal from '../Bank/components/ZapModal';
 import { makeStyles } from '@material-ui/core/styles';
 import useBombFinance from '../../hooks/useBombFinance';
 import { Helmet } from 'react-helmet';
 import ProgressCountdown from '../Boardroom/components/ProgressCountdown';
+import Stake from '../Boardroom/components/Stake';
 
 import HomeImage from '../../assets/img/background.jpg';
+import Harvest from '../Boardroom/components/Harvest';
 const BackgroundImage = createGlobalStyle`
   body {
     background: url(${HomeImage}) repeat !important;
@@ -68,6 +85,7 @@ const Home = () => {
   const lastEpochTwap = useLastEpochTwap();
   const bSharestaked = useTotalStakedOnBoardroom();
   const boardroom_APR = useFetchBoardroomAPR();
+  const liveEpochTwap = useCashPriceInEstimatedTWAP();
 
   // const bombmaxi = useBombMaxiStats('0xd6f52e8ab206e59a1e13b3d6c5b7f31e90ef46ef000200000000000000000028');
 
@@ -82,6 +100,10 @@ const Home = () => {
   const lastTwap = useMemo(
     () => (lastEpochTwap && current_Epoch ? Number(lastEpochTwap / (current_Epoch * 10000000000)).toFixed(3) : null),
     [lastEpochTwap, current_Epoch],
+  );
+  const liveTwap = useMemo(
+    () => (liveEpochTwap ? Number(liveEpochTwap.priceInDollars).toFixed(3) : null),
+    [liveEpochTwap],
   );
 
   const bombCirculatingSupply = useMemo(() => (bombStats ? String(bombStats.circulatingSupply) : null), [bombStats]);
@@ -150,183 +172,142 @@ const Home = () => {
       </Helmet>
       <BackgroundImage />
       <Grid container spacing={3}>
-        {/* TVL */}
-        <Grid item xs={12} sm={4}>
-          <Card style={{ paddingTop: '10px' }}>
-            <CardContent align="center">
-              <h2>Total Value Locked</h2>
-              <CountUp style={{ fontSize: '25px' }} end={TVL} separator="," prefix="$" />
-            </CardContent>
-          </Card>
+        <Grid item xs={12} sm={7}>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center">
+                    {' '}
+                    <h2>Bomb Finance Summmary</h2>{' '}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center">
+                    {' '}
+                    <h3>Token</h3>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    {' '}
+                    <h3>Current Supply</h3>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    {' '}
+                    <h3>Total Supply</h3>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    {' '}
+                    <h3>Price</h3>{' '}
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow key="BOMB" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">$BOMB</TableCell>
+                  <TableCell align="center">{roundAndFormatNumber(bombCirculatingSupply, 2)}</TableCell>
+                  <TableCell align="center">{roundAndFormatNumber(bombTotalSupply, 2)}</TableCell>
+                  <TableCell align="center">
+                    ${bombPriceInDollars ? roundAndFormatNumber(bombPriceInDollars, 2) : '-.--'}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+                <TableRow key="BSHARE" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">$BSHARE</TableCell>
+                  <TableCell align="center">{roundAndFormatNumber(bShareCirculatingSupply, 2)}</TableCell>
+                  <TableCell align="center">{roundAndFormatNumber(bShareTotalSupply, 2)}</TableCell>
+                  <TableCell align="center">${bSharePriceInDollars ? bSharePriceInDollars : '-.--'}</TableCell>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+                <TableRow key="BBOND" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">$BBOND</TableCell>
+                  <TableCell align="center">{roundAndFormatNumber(tBondCirculatingSupply, 2)}</TableCell>
+                  <TableCell align="center">{roundAndFormatNumber(tBondTotalSupply, 2)}</TableCell>
+                  <TableCell align="center">${tBondPriceInDollars ? tBondPriceInDollars : '-.--'}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Grid>
-
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent align="center" style={{ position: 'relative' }}>
-              <Box mt={2}>
-                <CardIcon>
-                  <TokenSymbol symbol="BOMB" />
-                </CardIcon>
-              </Box>
-
-              <Box>
-                <span style={{ fontSize: '16px', alignContent: 'flex-start' }}>
-                  ${bombPriceInDollars ? roundAndFormatNumber(bombPriceInDollars, 2) : '-.--'} / BOMB
-                </span>
-              </Box>
-              <span style={{ fontSize: '12px' }}>
-                Circulating Supply: {roundAndFormatNumber(bombCirculatingSupply, 2)} <br />
-                Total Supply: {roundAndFormatNumber(bombTotalSupply, 2)}
-              </span>
-            </CardContent>
-          </Card>
+        {/* //  */}
+        <Grid item xs={12} sm={5}>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableBody>
+                <TableRow key="CURRENT EPOCH" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">
+                    {' '}
+                    <h4>Current Epoch</h4>{' '}
+                  </TableCell>
+                  <TableCell align="center">{Number(currentEpoch)}</TableCell>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+                <TableRow key="NEXT EPOCH" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">
+                    {' '}
+                    <h4>Next Epoch</h4>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    <ProgressCountdown base={moment().toDate()} hideBar={true} deadline={to} description="Next Epoch" />
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+                <TableRow key="LIVE TWAP" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">
+                    {' '}
+                    <h4>Live Twap</h4>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography>{Number(liveTwap)}</Typography>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+                <TableRow key="TVL" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">
+                    {' '}
+                    <h4>TVL</h4>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography>{TVL}</Typography>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+                <TableRow key="LAST TWAP" sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell align="center">
+                    {' '}
+                    <h4>Last Epoch TWAP</h4>{' '}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography>{lastTwap}</Typography>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Grid>
-
-        {/* BSHARE */}
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent align="center" style={{ position: 'relative' }}>
-              <Box mt={2}>
-                <CardIcon>
-                  <TokenSymbol symbol="BSHARE" />
-                </CardIcon>
-              </Box>
-
-              <Box>
-                <span style={{ fontSize: '16px' }}>
-                  ${bSharePriceInDollars ? bSharePriceInDollars : '-.--'} / BSHARE
-                </span>
-              </Box>
-              <span style={{ fontSize: '12px' }}>
-                Circulating Supply: {roundAndFormatNumber(bShareCirculatingSupply, 2)} <br />
-                Total Supply: {roundAndFormatNumber(bShareTotalSupply, 2)}
-              </span>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* BBOND */}
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent align="center" style={{ position: 'relative' }}>
-              <Box mt={2}>
-                <CardIcon>
-                  <TokenSymbol symbol="BBOND" />
-                </CardIcon>
-              </Box>
-
-              <Box>
-                <span style={{ fontSize: '16px' }}>${tBondPriceInDollars ? tBondPriceInDollars : '-.--'} / BBOND</span>
-              </Box>
-              <span style={{ fontSize: '12px' }}>
-                Circulating Supply: {roundAndFormatNumber(tBondCirculatingSupply, 2)} <br />
-                Total Supply: {roundAndFormatNumber(tBondTotalSupply, 2)}
-              </span>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Next Epoch */}
-        <Grid item xs={12} md={2} lg={2} className={classes.gridItem}>
-          <Card className={classes.gridItem}>
-            <CardContent style={{ textAlign: 'center' }}>
-              <Typography style={{ textTransform: 'uppercase', color: '#f9d749' }}>Next Epoch</Typography>
-              <ProgressCountdown base={moment().toDate()} hideBar={true} deadline={to} description="Next Epoch" />
-            </CardContent>
-          </Card>
-        </Grid>
-        {/* Current Epoch */}
-        <Grid item xs={12} md={2} lg={2} className={classes.gridItem}>
-          <Card className={classes.gridItem}>
-            <CardContent align="center">
-              <Typography style={{ textTransform: 'uppercase', color: '#f9d749' }}>Current Epoch</Typography>
-              <Typography>{Number(currentEpoch)}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        {/* Last Epoch TWAP  */}
-        <Grid item xs={12} md={2} lg={2} className={classes.gridItem}>
-          <Card className={classes.gridItem}>
-            <CardContent align="center">
-              <Typography style={{ textTransform: 'uppercase', color: '#f9d749' }}>Last Epoch TWAP</Typography>
-              <Typography>{lastTwap}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Board Room  */}
-        <Card>
-          <CardContent align="center">
-            <h2>Board Room</h2>
-            <Box mt={2}>
-              <Typography>TVL : $ {boardRoomTVL}</Typography>
-              <Typography>Total Staked: {getDisplayBalance(bSharestaked)}</Typography>
-              <Typography>Daily returns : {boardroomAPR}%</Typography>
-              <Button disabled onClick={onPresentBombZap} className="shinyButtonDisabledSecondary">
-                Zap In
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent align="center">
-            <Box mt={2}>
-              <CardIcon>
-                <TokenSymbol symbol="BOMB-BTCB-LP" />
-              </CardIcon>
-            </Box>
-            <h2>BOMB-BTCB PancakeSwap LP</h2>
-            <Box mt={2}>
-              <Button disabled onClick={onPresentBombZap} className="shinyButtonDisabledSecondary">
-                Zap In
-              </Button>
-            </Box>
-            <Box mt={2}>
-              <span style={{ fontSize: '26px' }}>
-                {bombLPStats?.tokenAmount ? bombLPStats?.tokenAmount : '-.--'} BOMB /{' '}
-                {bombLPStats?.ftmAmount ? bombLPStats?.ftmAmount : '-.--'} BTCB
-              </span>
-            </Box>
-            <Box>${bombLPStats?.priceOfOne ? bombLPStats.priceOfOne : '-.--'}</Box>
-            <span style={{ fontSize: '12px' }}>
-              Liquidity: ${bombLPStats?.totalLiquidity ? roundAndFormatNumber(bombLPStats.totalLiquidity, 2) : '-.--'}{' '}
-              <br />
-              Total Supply: {bombLPStats?.totalSupply ? roundAndFormatNumber(bombLPStats.totalSupply, 2) : '-.--'}
-            </span>
-          </CardContent>
-        </Card>
       </Grid>
-      <Grid item xs={12} sm={6}>
-        <Card>
-          <CardContent align="center">
-            <Box mt={2}>
-              <CardIcon>
-                <TokenSymbol symbol="BSHARE-BNB-LP" />
-              </CardIcon>
-            </Box>
-            <h2>BSHARE-BNB PancakeSwap LP</h2>
-            <Box mt={2}>
-              <Button onClick={onPresentBshareZap} className="shinyButtonSecondary">
-                Zap In
-              </Button>
-            </Box>
-            <Box mt={2}>
-              <span style={{ fontSize: '26px' }}>
-                {bshareLPStats?.tokenAmount ? bshareLPStats?.tokenAmount : '-.--'} BSHARE /{' '}
-                {bshareLPStats?.ftmAmount ? bshareLPStats?.ftmAmount : '-.--'} BNB
-              </span>
-            </Box>
-            <Box>${bshareLPStats?.priceOfOne ? bshareLPStats.priceOfOne : '-.--'}</Box>
-            <span style={{ fontSize: '12px' }}>
-              Liquidity: $
-              {bshareLPStats?.totalLiquidity ? roundAndFormatNumber(bshareLPStats.totalLiquidity, 2) : '-.--'}
-              <br />
-              Total Supply: {bshareLPStats?.totalSupply ? roundAndFormatNumber(bshareLPStats.totalSupply, 2) : '-.--'}
-            </span>
-          </CardContent>
-        </Card>
-      </Grid>
+      {/* Board Room  */}
+      <Card>
+        <CardContent align="center">
+          <h2>Board Room</h2>
+          <Box mt={2}>
+            <Typography>TVL : $ {boardRoomTVL}</Typography>
+            <Typography>Total Staked: {getDisplayBalance(bSharestaked)}</Typography>
+            <Typography>Daily returns : {boardroomAPR}%</Typography>
+            <Harvest />
+            <Stake />
+          </Box>
+        </CardContent>
+      </Card>
+      <Grid container spacing={3}></Grid>
+
       {/* </Grid> */}
     </Page>
   );
