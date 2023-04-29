@@ -40,6 +40,8 @@ import HomeImage from '../../assets/img/background.jpg';
 
 import FarmDetails from './FarmDetails';
 
+import Bond from './components/Bond';
+
 const BackgroundImage = createGlobalStyle`
   body {
     background: url(${HomeImage}) repeat !important;
@@ -261,6 +263,10 @@ const Home = () => {
             </CardContent>
           </Card>
         </Box>
+      </CardContent>
+
+      <CardContent align="center">
+        <Bond />
       </CardContent>
 
       <Grid container spacing={3}></Grid>

@@ -139,8 +139,6 @@ const FarmDetails = ({ bank }) => {
                 <Typography style={{ textTransform: 'uppercase', color: '#fffff' }}>
                   {`≈ $${earnedInDollarsStaked}`}
                 </Typography>
-
-                {/* <Label text={`${bank.depositTokenName} Staked`} /> */}
               </StyledCardHeader>
             </StyledCardContentInner>
           </CardContent>
