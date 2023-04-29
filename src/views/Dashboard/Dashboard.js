@@ -1,32 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Page from '../../components/Page';
 import { createGlobalStyle } from 'styled-components';
-import CountUp from 'react-countup';
 import moment from 'moment';
-import CardIcon from '../../components/CardIcon';
-import TokenSymbol from '../../components/TokenSymbol';
 import useBombStats from '../../hooks/useBombStats';
-import useLpStats from '../../hooks/useLpStats';
-import useLpStatsBTC from '../../hooks/useLpStatsBTC';
-import useModal from '../../hooks/useModal';
-import useZap from '../../hooks/useZap';
+
 import useBondStats from '../../hooks/useBondStats';
 import usebShareStats from '../../hooks/usebShareStats';
 import useTotalValueLocked from '../../hooks/useTotalValueLocked';
 import useCurrentEpoch from '../../hooks/useCurrentEpoch';
 import useLastEpochTwap from '../../hooks/useLastEpochTwap';
 import useTreasuryAllocationTimes from '../../hooks/useTreasuryAllocationTimes';
-import useTotalStakedOnBoardroom from '../../hooks/useTotalStakedOnBoardroom';
-import { getDisplayBalance } from '../../utils/formatBalance';
-import useFetchBoardroomAPR from '../../hooks/useFetchBoardroomAPR';
+import useBanks from '../../hooks/useBanks';
+
 import useCashPriceInEstimatedTWAP from '../../hooks/useCashPriceInEstimatedTWAP';
 
 import { roundAndFormatNumber } from '../../0x';
 
 import {
-  Box,
-  Button,
-  Card,
   CardContent,
   Grid,
   Typography,
@@ -37,18 +27,19 @@ import {
   TableRow,
   TableHead,
   Paper,
+  Box,
+  Card,
 } from '@material-ui/core';
-import ZapModal from '../Bank/components/ZapModal';
-import { makeStyles } from '@material-ui/core/styles';
-import useBombFinance from '../../hooks/useBombFinance';
+
 import { Helmet } from 'react-helmet';
 import ProgressCountdown from '../Boardroom/components/ProgressCountdown';
-import Stake from '../Boardroom/components/Stake';
+
 import Boardroom from './components/Boardroom';
 
 import HomeImage from '../../assets/img/background.jpg';
-import Harvest from '../Boardroom/components/Harvest';
-// import Boardroom from '../Boardroom';
+
+import FarmDetails from './FarmDetails';
+
 const BackgroundImage = createGlobalStyle`
   body {
     background: url(${HomeImage}) repeat !important;
@@ -58,47 +49,26 @@ const BackgroundImage = createGlobalStyle`
 `;
 const TITLE = 'bomb.money | BTC pegged algocoin';
 
-// const BackgroundImage = createGlobalStyle`
-//   body {
-//     background-color: grey;
-//     background-size: cover !important;
-//   }
-// `;
-
-const useStyles = makeStyles((theme) => ({
-  button: {
-    [theme.breakpoints.down('415')]: {
-      // marginTop: '10px'
-    },
-  },
-}));
-
 const Home = () => {
-  const classes = useStyles();
   const TVL = useTotalValueLocked();
-  const bombFtmLpStats = useLpStatsBTC('BOMB-BTCB-LP');
-  const bShareFtmLpStats = useLpStats('BSHARE-BNB-LP');
+
   const bombStats = useBombStats();
   const bShareStats = usebShareStats();
   const tBondStats = useBondStats();
-  const bombFinance = useBombFinance();
   const { to } = useTreasuryAllocationTimes();
   const current_Epoch = useCurrentEpoch();
   const lastEpochTwap = useLastEpochTwap();
-  const bSharestaked = useTotalStakedOnBoardroom();
-  const boardroom_APR = useFetchBoardroomAPR();
+
   const liveEpochTwap = useCashPriceInEstimatedTWAP();
+  const [banks] = useBanks();
+  const activeBanks = banks.filter((bank) => !bank.finished);
 
-  // const bombmaxi = useBombMaxiStats('0xd6f52e8ab206e59a1e13b3d6c5b7f31e90ef46ef000200000000000000000028');
-
-  const bombLPStats = useMemo(() => (bombFtmLpStats ? bombFtmLpStats : null), [bombFtmLpStats]);
-  const boardroomAPR = useMemo(() => (boardroom_APR ? (boardroom_APR / 365).toFixed(2) : null), [boardroom_APR]);
+  const tvl = useMemo(() => (TVL ? TVL.toFixed(2) : '-.--'), [TVL]);
   const bombPriceInDollars = useMemo(
     () => (bombStats ? Number(bombStats.priceInDollars).toFixed(2) : null),
     [bombStats],
   );
 
-  const bshareLPStats = useMemo(() => (bShareFtmLpStats ? bShareFtmLpStats : null), [bShareFtmLpStats]);
   const currentEpoch = useMemo(() => (current_Epoch ? Number(current_Epoch) : null), [current_Epoch]);
   const lastTwap = useMemo(
     () => (lastEpochTwap && current_Epoch ? Number(lastEpochTwap / (current_Epoch * 10000000000)).toFixed(3) : null),
@@ -115,13 +85,6 @@ const Home = () => {
   const bSharePriceInDollars = useMemo(
     () => (bShareStats ? Number(bShareStats.priceInDollars).toFixed(2) : null),
     [bShareStats],
-  );
-  const boardRoomTVL = useMemo(
-    () =>
-      bSharestaked && bShareStats
-        ? roundAndFormatNumber(Number(bSharestaked), 2) * roundAndFormatNumber(Number(bShareStats.priceInDollars), 2)
-        : null,
-    [bShareStats, bSharestaked],
   );
 
   const bShareCirculatingSupply = useMemo(
@@ -140,33 +103,6 @@ const Home = () => {
     [tBondStats],
   );
   const tBondTotalSupply = useMemo(() => (tBondStats ? String(tBondStats.totalSupply) : null), [tBondStats]);
-
-  const bombLpZap = useZap({ depositTokenName: 'BOMB-BTCB-LP' });
-  const bshareLpZap = useZap({ depositTokenName: 'BSHARE-BNB-LP' });
-
-  const [onPresentBombZap, onDissmissBombZap] = useModal(
-    <ZapModal
-      decimals={18}
-      onConfirm={(zappingToken, tokenName, amount) => {
-        if (Number(amount) <= 0 || isNaN(Number(amount))) return;
-        bombLpZap.onZap(zappingToken, tokenName, amount);
-        onDissmissBombZap();
-      }}
-      tokenName={'BOMB-BTCB-LP'}
-    />,
-  );
-
-  const [onPresentBshareZap, onDissmissBshareZap] = useModal(
-    <ZapModal
-      decimals={18}
-      onConfirm={(zappingToken, tokenName, amount) => {
-        if (Number(amount) <= 0 || isNaN(Number(amount))) return;
-        bshareLpZap.onZap(zappingToken, tokenName, amount);
-        onDissmissBshareZap();
-      }}
-      tokenName={'BSHARE-BNB-LP'}
-    />,
-  );
 
   return (
     <Page>
@@ -277,7 +213,7 @@ const Home = () => {
                     <h4>TVL</h4>{' '}
                   </TableCell>
                   <TableCell align="center">
-                    <Typography>{TVL}</Typography>
+                    <Typography>{tvl}</Typography>
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -300,27 +236,34 @@ const Home = () => {
       <CardContent align="center">
         <Boardroom />
       </CardContent>
-      {/* <Card>
-        <CardContent align="center">
-          <h2>Board Room</h2>
-          <Box mt={2}>
-            <Typography>TVL : $ {boardRoomTVL}</Typography>
-            <Typography>Total Staked: {getDisplayBalance(bSharestaked)}</Typography>
-            <Typography>Daily returns : {boardroomAPR}%</Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={3}>
-                <Harvest />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <Boardroom />
-              </Grid>
-            </Grid>
-          </Box>
-        </CardContent>
-      </Card> */}
-      <Grid container spacing={3}></Grid>
+      <CardContent align="center">
+        {/* <Grid container spacing={3} style={{ marginTop: '20px' }}> */}
+        <Box>
+          <Card>
+            <CardContent>
+              <h2>Bomb Farms</h2>
+              Stake your LP tokens in our farms to start earning $BSHARE
+              <TableContainer component={Paper}>
+                <Table aria-label="simple table">
+                  <TableBody>
+                    {activeBanks
+                      .filter((bank) => bank.sectionInUI === 3)
+                      .map((bank) => (
+                        <React.Fragment key={bank.name}>
+                          <h3>{`${bank.depositTokenName}`}</h3>
+                          <FarmDetails bank={bank} />
+                        </React.Fragment>
+                      ))}
+                    {/* </Grid> */}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Box>
+      </CardContent>
 
-      {/* </Grid> */}
+      <Grid container spacing={3}></Grid>
     </Page>
   );
 };
