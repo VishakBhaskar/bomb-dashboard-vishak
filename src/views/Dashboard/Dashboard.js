@@ -239,7 +239,7 @@ const Home = () => {
         <Boardroom />
       </CardContent>
       <CardContent align="center">
-        {/* <Grid container spacing={3} style={{ marginTop: '20px' }}> */}
+        {/* Farms */}
         <Box>
           <Card>
             <CardContent>
@@ -256,7 +256,6 @@ const Home = () => {
                           <FarmDetails bank={bank} />
                         </React.Fragment>
                       ))}
-                    {/* </Grid> */}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -264,7 +263,7 @@ const Home = () => {
           </Card>
         </Box>
       </CardContent>
-
+      {/* Bonds  */}
       <CardContent align="center">
         <Bond />
       </CardContent>
